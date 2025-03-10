@@ -23,8 +23,7 @@ int main(void) {
       .x = X,
       .y = Y,
   };
-  void *platform_state = nullptr;
-  if (platform_startup(platform_state, config)) {
+  if (platform_startup(config)) {
     while (platform_pump_messages()) {
     }
   }

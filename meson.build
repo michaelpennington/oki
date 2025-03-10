@@ -7,10 +7,43 @@ os = build_machine.system()
 cc = meson.get_compiler('c')
 conf_data = configuration_data()
 
+wayland_build = false
+x11_build = false
+
+engine_dependencies = []
+
 if os == 'linux'
   conf_data.set('KPLATFORM_LINUX', true)
+  dl_dep = cc.find_library('dl', required : true)
+  engine_dependencies += dl_dep
+
+  x11_dep = dependency('x11', required : get_option('x11'))
+  x11_xcb_dep = dependency('x11-xcb', required : get_option('x11'))
+  xkb_x11_dep = dependency('xkbcommon-x11', required : get_option('x11'))
+  xkbcommon_dep = dependency('xkbcommon', required : true)
+
+  engine_dependencies += xkbcommon_dep
+
+  if x11_dep.found() and x11_xcb_dep.found() and xkb_x11_dep.found()
+    x11_build = true
+    conf_data.set('KBUILD_X11', true)
+    engine_dependencies += [x11_dep, xkb_x11_dep, x11_xcb_dep]
+  endif
+
+  wl_dep = dependency('wayland-client', required : get_option('wayland'))
+  wl_protos_dep = dependency('wayland-protocols', required : get_option('wayland'))
+  if wl_dep.found() and wl_protos_dep.found()
+    wayland_build = true
+    engine_dependencies += [wl_dep, wl_protos_dep]
+    
+    conf_data.set('KBUILD_WAYLAND', true)
+  endif
+
+  if not (x11_build or wayland_build)
+    error('At least one of x11 or wayland must be selected on Linux')
+  endif
 elif os == 'windows'
-  conf_data.set('KPLATFORM_LINUX', false)
+  conf_data.set('KPLATFORM_WINDOWS', true)
 else
   error('Only windows and linux are supported at the moment, not ', os)
 endif
@@ -54,7 +87,8 @@ subdir('testbed')
 engine = library(
   'oki',
   library_files,
-  include_directories : headers_inc,
+  include_directories : [headers_inc, internal_inc],
+  dependencies : engine_dependencies,
   c_args : ['-DKEXPORT']
 )
 

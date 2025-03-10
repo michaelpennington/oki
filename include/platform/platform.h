@@ -10,7 +10,7 @@ typedef struct platform_config {
   i32 height;
 } platform_config;
 
-KAPI bool platform_startup(void *platform_state, platform_config config);
+KAPI bool platform_startup(platform_config config);
 
 KAPI void platform_shutdown();
 
@@ -24,4 +24,16 @@ void *platform_set_memory(i32 value, void *dest, u64 size);
 
 f64 platform_get_absolute_time();
 
-void platform_sleep(u64 ms);
+void platform_sleep(u32 ms);
+
+#if defined(KBUILD_X11)
+bool x11_platform_startup(void *state, platform_config config);
+void x11_platform_shutdown();
+bool x11_platform_pump_messages();
+#endif
+
+#if defined(KBUILD_WAYLAND)
+bool wl_platform_startup(void *state, platform_config config);
+void wl_platform_shutdown();
+bool wl_platform_pump_messages();
+#endif

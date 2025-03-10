@@ -6,6 +6,13 @@ pkgs.mkShellNoCC {
     clang
     llvm
     lld
+    pkg-config
+    wayland
+    wayland-protocols
+    wayland-scanner
+    xorg.libX11
+    xorg.libxcb
+    libxkbcommon
   ];
   CC = "clang";
   CC_LD = "lld";

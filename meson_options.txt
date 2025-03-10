@@ -11,3 +11,15 @@ option(
   value : true,
   description : 'Enable assertions'
 )
+option(
+  'wayland',
+  type : 'feature',
+  value : 'auto',
+  description : 'Build with wayland backend support (Linux only)'
+)
+option(
+  'x11',
+  type : 'feature',
+  value : 'auto',
+  description : 'Build with x11 backend support (Linux only)'
+)

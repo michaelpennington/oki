@@ -21,9 +21,8 @@ LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param,
 
 #define WINDOW_CLASS "kohi_window_class"
 
-bool platform_startup(void *platform_state, platform_config config) {
-  platform_state = malloc(sizeof(platform_state));
-  state_ptr = platform_state;
+bool platform_startup(platform_config config) {
+  state_ptr = malloc(sizeof(platform_state));
 
   state_ptr->h_instance = GetModuleHandleA(nullptr);
 
@@ -133,7 +132,7 @@ f64 platform_get_absolute_time() {
   return 0.0;
 }
 
-void platform_sleep(u64 ms) { Sleep(ms); }
+void platform_sleep(u32 ms) { Sleep(ms); }
 
 LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param,
                                        LPARAM l_param) {
