@@ -4,7 +4,7 @@ project('oki', 'c',
 )
 
 os = build_machine.system()
-
+cc = meson.get_compiler('c')
 conf_data = configuration_data()
 
 if os == 'linux'
@@ -19,9 +19,33 @@ if build_machine.cpu_family() != 'x86_64'
   error('Must be built on an x86_64 machine, cpu_family returned ', build_machine.cpu_family())
 endif
 
-if get_option('debug')
-  conf_data.set('_DEBUG', true)
+debug = get_option('debug')
+conf_data.set('_DEBUG', debug)
+
+levels = {'error': 4, 'warn': 3, 'info': 2, 'debug': 1, 'trace': 0}
+
+log_level = get_option('log_level')
+
+log = levels.get(log_level, 0)
+
+if log <= 3
+  conf_data.set('LOG_WARN_ENABLED', true)
 endif
+if log <= 2
+  conf_data.set('LOG_INFO_ENABLED', true)
+endif
+if log <= 1 and not (get_option('buildtype') == 'release')
+  conf_data.set('LOG_DEBUG_ENABLED', true)
+endif
+if log == 0 and not (get_option('buildtype') == 'release')
+  conf_data.set('LOG_TRACE_ENABLED', true)
+endif
+
+if get_option('assertions')
+  conf_data.set('KASSERTIONS_ENABLED', true)
+endif
+
+add_project_arguments(cc.get_supported_arguments('-fvisibility=hidden'), language : 'c')
 
 subdir('include')
 subdir('src')

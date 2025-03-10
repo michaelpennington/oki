@@ -1,0 +1,16 @@
+Diagnostics:
+  ClangTidy:
+    Add: ['bugprone-*', 'modernize-*', 'performance-*', 'readability-*', 'misc-*', 'clang-analyzer-*']
+    CheckOptions:
+      readability-identifier-length.MinimumVariableNameLength: 2
+    Remove: [
+      # 'bugprone-easily-swappable-parameters',
+      # 'readability-identifier-length',
+      # 'readability-magic-numbers',
+      # 'readability-function-cognitive-complexity',
+      # 'misc-unused-parameters',
+      # 'modernize-macro-to-enum',
+    ]
+  UnusedIncludes: Strict
+CompileFlags:
+  Add: -ferror-limit=0

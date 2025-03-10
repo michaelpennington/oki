@@ -1,1 +1,5 @@
-library_files = files('test.c')
+subdir('core')
+
+library_files = [
+  core_files,
+]

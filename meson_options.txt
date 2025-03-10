@@ -1,0 +1,13 @@
+option(
+  'log_level',
+  type : 'combo',
+  choices : ['error', 'warn', 'info', 'debug', 'trace'],
+  value : 'trace',
+  description : 'Maximum log level'
+)
+option(
+  'assertions',
+  type : 'boolean',
+  value : true,
+  description : 'Enable assertions'
+)
