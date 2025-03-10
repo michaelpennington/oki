@@ -35,7 +35,7 @@ engine = library(
 )
 
 testbed = executable(
-  'testbed',
+  'tester',
   testbed_files,
   include_directories : headers_inc,
   link_with : engine,
