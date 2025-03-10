@@ -18,7 +18,6 @@ typedef double f64;
 
 // Boolean types.
 typedef int b32;
-typedef char b8;
 
 // Ensure all types are of the correct size
 // NOLINTBEGIN(readability-implicit-bool-conversion, readability-magic-numbers)

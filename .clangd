@@ -3,6 +3,7 @@ Diagnostics:
     Add: ['bugprone-*', 'modernize-*', 'performance-*', 'readability-*', 'misc-*', 'clang-analyzer-*']
     CheckOptions:
       readability-identifier-length.MinimumVariableNameLength: 2
+      readability-identifier-length.MinimumParameterNameLength: 2
     Remove: [
       # 'bugprone-easily-swappable-parameters',
       # 'readability-identifier-length',
