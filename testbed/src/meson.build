@@ -1,1 +1,4 @@
-testbed_files = files('main.c')
+testbed_files = files(
+  'entry.c',
+  'game.c'
+)

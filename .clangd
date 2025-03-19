@@ -6,7 +6,7 @@ Diagnostics:
       readability-identifier-length.MinimumParameterNameLength: 2
       readability-magic-numbers.IgnorePowersOf2IntegerValues: true
     Remove: [
-      # 'bugprone-easily-swappable-parameters',
+      'bugprone-easily-swappable-parameters',
       # 'readability-identifier-length',
       # 'readability-magic-numbers',
       # 'readability-function-cognitive-complexity',

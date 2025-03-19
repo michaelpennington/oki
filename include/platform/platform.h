@@ -10,11 +10,11 @@ typedef struct platform_config {
   i32 height;
 } platform_config;
 
-KAPI bool platform_startup(platform_config config);
+bool platform_startup(void **plat_state, platform_config config);
 
-KAPI void platform_shutdown();
+void platform_shutdown();
 
-KAPI bool platform_pump_messages();
+bool platform_pump_messages();
 
 void *platform_allocate(u64 size, bool aligned);
 void platform_free(void *block, bool aligned);

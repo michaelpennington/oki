@@ -52,8 +52,9 @@ static bool x11_startup(platform_config config) {
 }
 #endif
 
-bool platform_startup(platform_config config) {
-  state_ptr = malloc(sizeof(platform_state));
+bool platform_startup(void **plat_state, platform_config config) {
+  *plat_state = malloc(sizeof(platform_state));
+  state_ptr = *plat_state;
   if (!state_ptr) {
     return false;
   }
@@ -65,17 +66,17 @@ bool platform_startup(platform_config config) {
       if (wl_startup(config)) {
         return true;
       }
-      kerror("Wayland specifically requested but failed to start.");
+      kfatal("Wayland specifically requested but failed to start.");
       return false;
     }
     if (strcmp(backend_choice, "x11") == 0) {
       if (x11_startup(config)) {
         return true;
       }
-      kerror("X11 specifically requested but failed to start.");
+      kfatal("X11 specifically requested but failed to start.");
       return false;
     }
-    kerror("%s is not a valid backend on linux, use x11 or wayland.",
+    kfatal("%s is not a valid backend on linux, use x11 or wayland.",
            backend_choice);
     return false;
   }
@@ -85,14 +86,14 @@ bool platform_startup(platform_config config) {
   if (wl_startup(config)) {
     return true;
   }
-  kerror("Wayland could not start");
+  kfatal("Wayland could not start");
 #endif
 
 #if defined(KBUILD_X11)
   if (x11_startup(config)) {
     return true;
   }
-  kerror("X11 could not start");
+  kfatal("X11 could not start");
 #endif
 
   kfatal("No appropriate linux platforms found.");
@@ -103,7 +104,13 @@ bool platform_pump_messages(void) {
   return state_ptr->platform_pump_messages();
 }
 
-void platform_shutdown(void) { state_ptr->platform_shutdown(); }
+void platform_shutdown(void) {
+  if (state_ptr) {
+    state_ptr->platform_shutdown();
+    free(state_ptr);
+    state_ptr = nullptr;
+  }
+}
 
 void *platform_allocate(u64 size, bool aligned) {
   (void)aligned;
