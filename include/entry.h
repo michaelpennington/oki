@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/application.h"
+#include "core/kmemory.h"
 #include "game_types.h"
 #include <stdio.h>
 
@@ -10,6 +11,8 @@ extern bool create_game(game *out_game);
  * The main entry point of the application.
  */
 int main(void) {
+  initialize_memory();
+
   game game_inst;
   if (!create_game(&game_inst)) {
     printf("Could not create game!\n");
@@ -31,6 +34,10 @@ int main(void) {
     printf("FATAL: application failed to run\n");
     return 2;
   }
+
+  kfree(game_inst.state);
+
+  shutdown_memory();
 
   return 0;
 }

@@ -53,7 +53,8 @@ static bool x11_startup(platform_config config) {
 #endif
 
 bool platform_startup(void **plat_state, platform_config config) {
-  *plat_state = malloc(sizeof(platform_state));
+  *plat_state = platform_allocate(sizeof(platform_state), false);
+  platform_zero_memory(*plat_state, sizeof(platform_state));
   state_ptr = *plat_state;
   if (!state_ptr) {
     return false;
@@ -125,11 +126,11 @@ void *platform_zero_memory(void *block, u64 size) {
   return memset(block, 0, size);
 }
 
-void *platform_copy_memory(void *dest, u64 size, const void *source) {
+void *platform_copy_memory(void *dest, const void *source, u64 size) {
   return memcpy(dest, source, size);
 }
 
-void *platform_set_memory(i32 value, void *dest, u64 size) {
+void *platform_set_memory(void *dest, i32 value, u64 size) {
   return memset(dest, value, size);
 }
 

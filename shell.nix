@@ -13,6 +13,7 @@ pkgs.mkShellNoCC {
     xorg.libX11
     xorg.libxcb
     libxkbcommon
+    valgrind
   ];
   CC = "clang";
   CC_LD = "lld";

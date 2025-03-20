@@ -1,4 +1,5 @@
 #include "core/application.h"
+#include "core/kmemory.h"
 #include "core/logger.h"
 #include "game_types.h"
 #include "platform/platform.h"
@@ -68,6 +69,7 @@ bool application_create(game *game_inst) {
 }
 
 bool application_run() {
+  print_memory_usage_str();
   while (app_state.is_running) {
     if (!platform_pump_messages()) {
       app_state.is_running = false;

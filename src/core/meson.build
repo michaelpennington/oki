@@ -1,4 +1,5 @@
 core_files = files(
   'logger.c',
-  'application.c'
+  'application.c',
+  'kmemory.c',
 )

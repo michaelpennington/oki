@@ -48,7 +48,7 @@ bool init_wpfns(void) {
 
   state_ptr->wl_client_handle =
       dlopen("libwayland-client.so", RTLD_LAZY | RTLD_LOCAL);
-  if (state_ptr->wl_client_handle == NULL) {
+  if (state_ptr->wl_client_handle == nullptr) {
     kfatal("Failed to load wayland-client");
     return false;
   }
@@ -286,7 +286,7 @@ static void wl_keyboard_keymap(void *data, struct wl_keyboard *wl_keyboard,
     return;
   }
 
-  char *map_shm = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+  char *map_shm = mmap(nullptr, size, PROT_READ, MAP_SHARED, fd, 0);
   if (map_shm == MAP_FAILED) { // NOLINT
     return;
   }
@@ -396,20 +396,20 @@ static void wl_seat_capabilities(void *data, struct wl_seat *wl_seat,
 
   i32 have_pointer = (i32)capabilities & WL_SEAT_CAPABILITY_POINTER;
 
-  if (have_pointer && state->pointer == NULL) {
+  if (have_pointer && state->pointer == nullptr) {
     state->pointer = wl_seat_get_pointer(state->seat);
     wl_pointer_add_listener(state->pointer, &wl_pointer_listener, state);
-  } else if (!have_pointer && state->pointer != NULL) {
+  } else if (!have_pointer && state->pointer != nullptr) {
     wl_pointer_release(state->pointer);
     state->pointer = nullptr;
   }
 
   i32 have_keyboard = (i32)capabilities & WL_SEAT_CAPABILITY_KEYBOARD;
 
-  if (have_keyboard && state->keyboard == NULL) {
+  if (have_keyboard && state->keyboard == nullptr) {
     state->keyboard = wl_seat_get_keyboard(state->seat);
     wl_keyboard_add_listener(state->keyboard, &wl_keyboard_listener, state);
-  } else if (!have_keyboard && state->keyboard != NULL) {
+  } else if (!have_keyboard && state->keyboard != nullptr) {
     wl_keyboard_release(state->keyboard);
     state->keyboard = nullptr;
   }

@@ -1,4 +1,5 @@
 #include "game.h"
+#include <core/kmemory.h>
 #include <entry.h>
 
 #define WIDTH 1280
@@ -18,8 +19,7 @@ bool create_game(game *out_game) {
   out_game->render = game_render;
   out_game->on_resize = game_on_resize;
 
-  game_state state = {.delta_time = 0.0F};
-  out_game->state = &state;
+  out_game->state = kallocate(sizeof(game_state), MEMORY_TAG_GAME);
 
   return true;
 }
