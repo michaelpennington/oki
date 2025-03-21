@@ -1,4 +1,5 @@
 #include "core/application.h"
+#include "core/event.h"
 #include "core/kmemory.h"
 #include "core/logger.h"
 #include "game_types.h"
@@ -41,6 +42,11 @@ bool application_create(game *game_inst) {
 
   app_state.is_running = true;
   app_state.is_suspended = false;
+
+  if (!event_initialize()) {
+    kerror("Event system failed initialization. Cannot continue");
+    return false;
+  }
 
   platform_config conf = {
       .width = game_inst->app_config.start_width,
@@ -90,6 +96,7 @@ bool application_run() {
     }
   }
   app_state.is_running = false;
+  event_shutdown();
 
   platform_shutdown();
   return true;
