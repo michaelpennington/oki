@@ -1,5 +1,6 @@
 #include "core/application.h"
 #include "core/event.h"
+#include "core/input.h"
 #include "core/kmemory.h"
 #include "core/logger.h"
 #include "game_types.h"
@@ -30,6 +31,8 @@ bool application_create(game *game_inst) {
     kfatal("Failed to initialize logging");
     return false;
   }
+
+  input_initialize();
 
   // TODO: Remove
   const float pi = 3.14F;
@@ -93,6 +96,8 @@ bool application_run() {
         app_state.is_running = false;
         break;
       }
+
+      input_update(0);
     }
   }
   app_state.is_running = false;
