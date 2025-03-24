@@ -1,8 +1,10 @@
 #include "platform/platform.h"
 
+#include "core/input.h"
 #include <stdlib.h>
 #include <windows.h>
 #include <windowsx.h>
+#include <winuser.h>
 
 typedef struct platform_state {
   HINSTANCE h_instance;
@@ -21,8 +23,10 @@ LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param,
 
 #define WINDOW_CLASS "kohi_window_class"
 
-bool platform_startup(platform_config config) {
-  state_ptr = malloc(sizeof(platform_state));
+bool platform_startup(void **plat_state, platform_config config) {
+  *plat_state = platform_allocate(sizeof(platform_state), false);
+  platform_zero_memory(*plat_state, sizeof(platform_state));
+  state_ptr = *plat_state;
 
   state_ptr->h_instance = GetModuleHandleA(nullptr);
 
@@ -116,10 +120,10 @@ void platform_free(void *block, bool aligned) {
 void *platform_zero_memory(void *block, u64 size) {
   return memset(block, 0, size);
 }
-void *platform_copy_memory(void *dest, u64 size, const void *source) {
+void *platform_copy_memory(void *dest, const void *source, u64 size) {
   return memcpy(dest, source, size);
 }
-void *platform_set_memory(i32 value, void *dest, u64 size) {
+void *platform_set_memory(void *dest, i32 value, u64 size) {
   return memset(dest, value, size);
 }
 
@@ -161,33 +165,42 @@ LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param,
   case WM_KEYUP:
   case WM_SYSKEYUP: {
     bool pressed = (bool)(msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN);
-    (void)pressed;
-    // keys key = (u16)w_param;
-    // input_process_key(key, pressed);
+    keys key = (u16)w_param;
+    input_process_key(key, pressed);
   } break;
   case WM_MOUSEMOVE: {
     // Mouse move
     i32 x_position = GET_X_LPARAM(l_param);
     i32 y_position = GET_Y_LPARAM(l_param);
-    (void)x_position;
-    (void)y_position;
     // TODO: Input processing
-    // input_process_mouse_move((i16)x_position, (i16)y_position);
+    input_process_mouse_move((i16)x_position, (i16)y_position);
   } break;
   case WM_MOUSEWHEEL: {
     i32 z_delta = GET_WHEEL_DELTA_WPARAM(w_param);
     if (z_delta != 0) {
       // Flatten input to OS-independent {-1, 1}
       z_delta = (z_delta < 0) ? -1 : 1;
+      input_process_mouse_wheel((i8)z_delta);
     }
-    // TODO: Input processing
   } break;
-  case WM_LBUTTONDOWN:
-  case WM_MBUTTONDOWN:
-  case WM_RBUTTONDOWN:
-  case WM_LBUTTONUP:
-  case WM_MBUTTONUP:
-  case WM_RBUTTONUP:
+  case WM_LBUTTONDOWN: {
+    input_process_button(BUTTON_LEFT, true);
+  } break;
+  case WM_MBUTTONDOWN: {
+    input_process_button(BUTTON_MIDDLE, true);
+  } break;
+  case WM_RBUTTONDOWN: {
+    input_process_button(BUTTON_RIGHT, true);
+  } break;
+  case WM_LBUTTONUP: {
+    input_process_button(BUTTON_LEFT, false);
+  } break;
+  case WM_MBUTTONUP: {
+    input_process_button(BUTTON_MIDDLE, false);
+  } break;
+  case WM_RBUTTONUP: {
+    input_process_button(BUTTON_RIGHT, false);
+  } break;
   default:
   }
 

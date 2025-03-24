@@ -19,6 +19,11 @@ typedef struct application_state {
 static application_state app_state;
 static bool initialized = false;
 
+bool application_on_event(u16 code, void *sender, void *listener_inst,
+                          event_context context);
+bool application_on_key(u16 code, void *sender, void *listener_inst,
+                        event_context context);
+
 bool application_create(game *game_inst) {
   if (initialized) {
     kfatal("application_create called more than once");
@@ -50,6 +55,10 @@ bool application_create(game *game_inst) {
     kerror("Event system failed initialization. Cannot continue");
     return false;
   }
+
+  event_register(EVENT_CODE_APPLICATION_QUIT, nullptr, application_on_event);
+  event_register(EVENT_CODE_KEY_PRESSED, nullptr, application_on_key);
+  event_register(EVENT_CODE_KEY_RELEASED, nullptr, application_on_key);
 
   platform_config conf = {
       .width = game_inst->app_config.start_width,
@@ -101,8 +110,55 @@ bool application_run() {
     }
   }
   app_state.is_running = false;
+  event_unregister(EVENT_CODE_APPLICATION_QUIT, nullptr, application_on_event);
+  event_unregister(EVENT_CODE_KEY_PRESSED, nullptr, application_on_key);
+  event_unregister(EVENT_CODE_KEY_RELEASED, nullptr, application_on_key);
   event_shutdown();
 
   platform_shutdown();
   return true;
+}
+
+bool application_on_event(u16 code, void *sender, void *listener_inst,
+                          event_context context) {
+  (void)sender;
+  (void)listener_inst;
+  (void)context;
+  switch (code) {
+  case EVENT_CODE_APPLICATION_QUIT: {
+    kinfo("EVENT_CODE_APPLICATION_QUIT received, shutting down.");
+    app_state.is_running = false;
+    return true;
+  }
+  default:
+    return false;
+  }
+}
+
+bool application_on_key(u16 code, void *sender, void *listener_inst,
+                        event_context context) {
+  (void)sender;
+  (void)listener_inst;
+  (void)context;
+  if (code == EVENT_CODE_KEY_PRESSED) {
+    u16 key_code = context.data.u16[0];
+    if (key_code == KEY_ESCAPE) {
+      event_context data = {};
+      event_fire(EVENT_CODE_APPLICATION_QUIT, nullptr, data);
+      return true;
+    }
+    if (key_code == KEY_A) {
+      kdebug("Explicit - A key pressed!");
+    } else {
+      kdebug("'%c' key pressed in window.", key_code);
+    }
+  } else if (code == EVENT_CODE_KEY_RELEASED) {
+    u16 key_code = context.data.u16[0];
+    if (key_code == KEY_B) {
+      kdebug("Explicit - B key released!");
+    } else {
+      kdebug("'%c' key released in window.", key_code);
+    }
+  }
+  return false;
 }
