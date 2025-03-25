@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "core/event.h"
+#include "core/input.h"
 #include "core/logger.h"
 #include "platform/platform.h"
 #include "platform/platform_linux_x11.h"
@@ -258,49 +260,46 @@ bool x11_platform_pump_messages(void) {
       xkb_keycode_t code = kb_event->detail;
       xkb_keysym_t key_sym =
           xkb_state_key_get_one_sym(state_ptr->xkb_state, code);
-      (void)pressed;
-      (void)key_sym;
-      /* keys key = translate_keycode(key_sym); */
-      /* input_process_key(key, pressed); */
+      keys key = translate_keycode(key_sym);
+      input_process_key(key, pressed);
     } break;
     case XCB_BUTTON_PRESS:
     case XCB_BUTTON_RELEASE: {
       xcb_button_press_event_t *mouse_event = (xcb_button_press_event_t *)event;
       bool pressed = (bool)(event->response_type = XCB_BUTTON_PRESS);
-      (void)pressed;
-      (void)mouse_event;
-      /* buttons mouse_button = BUTTON_MAX_BUTTONS; */
-      /* switch (mouse_event->detail) { */
-      /* case XCB_BUTTON_INDEX_1: */
-      /*   mouse_button = BUTTON_LEFT; */
-      /*   break; */
-      /* case XCB_BUTTON_INDEX_2: */
-      /*   mouse_button = BUTTON_MIDDLE; */
-      /*   break; */
-      /* case XCB_BUTTON_INDEX_3: */
-      /*   mouse_button = BUTTON_RIGHT; */
-      /*   break; */
-      /* } */
-      /**/
-      /* if (mouse_button != BUTTON_MAX_BUTTONS) { */
-      /*   input_process_button(mouse_button, pressed); */
-      /* } */
+      buttons mouse_button = BUTTON_MAX_BUTTONS;
+      switch (mouse_event->detail) {
+      case XCB_BUTTON_INDEX_1:
+        mouse_button = BUTTON_LEFT;
+        break;
+      case XCB_BUTTON_INDEX_2:
+        mouse_button = BUTTON_MIDDLE;
+        break;
+      case XCB_BUTTON_INDEX_3:
+        mouse_button = BUTTON_RIGHT;
+        break;
+      default:
+        break;
+      }
+
+      if (mouse_button != BUTTON_MAX_BUTTONS) {
+        input_process_button(mouse_button, pressed);
+      }
     } break;
     case XCB_MOTION_NOTIFY: {
       xcb_motion_notify_event_t *move_event =
           (xcb_motion_notify_event_t *)event;
-      (void)move_event;
-      /* input_process_mouse_move(move_event->event_x, move_event->event_y); */
+      input_process_mouse_move(move_event->event_x, move_event->event_y);
     } break;
     case XCB_CONFIGURE_NOTIFY: {
       xcb_configure_notify_event_t *configure_event =
           (xcb_configure_notify_event_t *)event;
 
       (void)configure_event;
-      /* event_context context; */
-      /* context.data.u16[0] = configure_event->width; */
-      /* context.data.u16[1] = configure_event->height; */
-      /* event_fire(EVENT_CODE_RESIZED, 0, context); */
+      event_context context;
+      context.data.u16[0] = configure_event->width;
+      context.data.u16[1] = configure_event->height;
+      event_fire(EVENT_CODE_RESIZED, nullptr, context);
     } break;
 
     case XCB_CLIENT_MESSAGE: {

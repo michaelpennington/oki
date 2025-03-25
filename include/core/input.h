@@ -9,7 +9,7 @@ typedef enum buttons {
   BUTTON_MAX_BUTTONS,
 } buttons;
 
-#define DEFINE_KEY(name, code) KEY_##name = code
+#define DEFINE_KEY(name, code) KKEY_##name = code
 
 typedef enum keys : u8 {
   DEFINE_KEY(BACKSPACE, 0x08),

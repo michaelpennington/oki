@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/input.h"
 #include "defines.h"
 
 typedef struct platform_config {
@@ -25,6 +26,11 @@ void *platform_set_memory(void *dest, i32 value, u64 size);
 f64 platform_get_absolute_time();
 
 void platform_sleep(u32 ms);
+
+#if defined(KPLATFORM_LINUX)
+#include <xkbcommon/xkbcommon.h>
+keys translate_keycode(u32 xkb_keycode);
+#endif
 
 #if defined(KBUILD_X11)
 bool x11_platform_startup(void *state, platform_config config);

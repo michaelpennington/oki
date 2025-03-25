@@ -8,7 +8,6 @@
 #include <xcb/xcb.h>
 #include <xkbcommon/xkbcommon.h>
 
-// NOLINTBEGIN(readability-identifier-length)
 typedef Display *(*PFN_x_open_display)(char *display_name);
 typedef i32 (*PFN_x_autorepeat_off)(Display *display);
 typedef i32 (*PFN_x_autorepeat_on)(Display *display);
@@ -49,7 +48,6 @@ typedef struct xkb_keymap *(*PFN_xkb_x11_keymap_new_from_device)(
     enum xkb_keymap_compile_flags flags);
 typedef struct xkb_state *(*PFN_xkb_x11_state_new_from_device)(
     struct xkb_keymap *keymap, xcb_connection_t *connection, i32 device_id);
-// NOLINTEND(readability-identifier-length)
 
 typedef struct xpfns {
   // x11 functions

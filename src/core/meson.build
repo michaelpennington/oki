@@ -4,4 +4,5 @@ core_files = files(
   'kmemory.c',
   'event.c',
   'input.c',
+  'kstring.c',
 )

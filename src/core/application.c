@@ -2,6 +2,7 @@
 #include "core/event.h"
 #include "core/input.h"
 #include "core/kmemory.h"
+#include "core/kstring.h"
 #include "core/logger.h"
 #include "game_types.h"
 #include "platform/platform.h"
@@ -55,6 +56,8 @@ bool application_create(game *game_inst) {
     kerror("Event system failed initialization. Cannot continue");
     return false;
   }
+
+  ktrace("Length of `%s` is %d", "hello", string_length("hello"));
 
   event_register(EVENT_CODE_APPLICATION_QUIT, nullptr, application_on_event);
   event_register(EVENT_CODE_KEY_PRESSED, nullptr, application_on_key);
@@ -142,19 +145,19 @@ bool application_on_key(u16 code, void *sender, void *listener_inst,
   (void)context;
   if (code == EVENT_CODE_KEY_PRESSED) {
     u16 key_code = context.data.u16[0];
-    if (key_code == KEY_ESCAPE) {
+    if (key_code == KKEY_ESCAPE) {
       event_context data = {};
       event_fire(EVENT_CODE_APPLICATION_QUIT, nullptr, data);
       return true;
     }
-    if (key_code == KEY_A) {
+    if (key_code == KKEY_A) {
       kdebug("Explicit - A key pressed!");
     } else {
       kdebug("'%c' key pressed in window.", key_code);
     }
   } else if (code == EVENT_CODE_KEY_RELEASED) {
     u16 key_code = context.data.u16[0];
-    if (key_code == KEY_B) {
+    if (key_code == KKEY_B) {
       kdebug("Explicit - B key released!");
     } else {
       kdebug("'%c' key released in window.", key_code);

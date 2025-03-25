@@ -1,4 +1,5 @@
 #include "platform/platform_linux_wayland.h"
+#include "core/event.h"
 #include "core/logger.h"
 #include "platform/platform.h"
 
@@ -8,7 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
-#include <time.h>
 #include <unistd.h>
 #include <xkbcommon/xkbcommon.h>
 
@@ -108,10 +108,10 @@ static void handle_toplevel_configure(void *data,
     state->height = height;
   }
   if (width > 0 && height > 0) {
-    /* event_context context; */
-    /* context.data.u16[0] = (u16)width; */
-    /* context.data.u16[1] = (u16)height; */
-    /* event_fire(EVENT_CODE_RESIZED, 0, context); */
+    event_context context;
+    context.data.u16[0] = (u16)width;
+    context.data.u16[1] = (u16)height;
+    event_fire(EVENT_CODE_RESIZED, nullptr, context);
   }
 }
 
@@ -134,10 +134,10 @@ static void xdg_surface_configure(void *data, struct xdg_surface *xdg_surface,
 
   if (state->xdg_surface_configured) {
     if (state->width > 0 && state->height > 0) {
-      /* event_context context; */
-      /* context.data.u16[0] = (u16)state->width; */
-      /* context.data.u16[1] = (u16)state->height; */
-      /* event_fire(EVENT_CODE_RESIZED, 0, context); */
+      event_context context;
+      context.data.u16[0] = (u16)state->width;
+      context.data.u16[1] = (u16)state->height;
+      event_fire(EVENT_CODE_RESIZED, nullptr, context);
     }
   }
   wl_surface_commit(state->wl_surface);
@@ -179,7 +179,6 @@ static void wl_pointer_leave(void *data, struct wl_pointer *wl_pointer,
   state->pointer_event.event_mask |= POINTER_EVENT_LEAVE;
 }
 
-// NOLINTBEGIN(bugprone-easily-swappable-parameters)
 static void wl_pointer_motion(void *data, struct wl_pointer *wl_pointer,
                               u32 time, wl_fixed_t surface_x,
                               wl_fixed_t surface_y) {
@@ -245,34 +244,36 @@ static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer) {
   pointer_event *event = &state->pointer_event;
 
   if (event->event_mask & (POINTER_EVENT_ENTER | POINTER_EVENT_MOTION)) {
-    /* input_process_mouse_move((i16)wl_fixed_to_int(event->surface_x), */
-    /*                          (i16)wl_fixed_to_int(event->surface_y)); */
+    input_process_mouse_move((i16)wl_fixed_to_int(event->surface_x),
+                             (i16)wl_fixed_to_int(event->surface_y));
   }
 
   if (event->event_mask & POINTER_EVENT_BUTTON) {
-    /* bool pressed = (bool)(event->state == WL_POINTER_BUTTON_STATE_PRESSED);
-     */
-    /* switch (event->button) { */
-    /* case BTN_LEFT: */
-    /*   input_process_button(BUTTON_LEFT, pressed); */
-    /*   break; */
-    /* case BTN_MIDDLE: */
-    /*   input_process_button(BUTTON_MIDDLE, pressed); */
-    /*   break; */
-    /* case BTN_RIGHT: */
-    /*   input_process_button(BUTTON_RIGHT, pressed); */
-    /*   break; */
-    /* } */
+    bool pressed = (bool)(event->state == WL_POINTER_BUTTON_STATE_PRESSED);
+
+    switch (event->button) {
+    case BTN_LEFT:
+      input_process_button(BUTTON_LEFT, pressed);
+      break;
+    case BTN_MIDDLE:
+      input_process_button(BUTTON_MIDDLE, pressed);
+      break;
+    case BTN_RIGHT:
+      input_process_button(BUTTON_RIGHT, pressed);
+      break;
+    default:
+      break;
+    }
   }
 
   if (event->event_mask & axis_events && (int)event->axes[0].valid) {
-    /* if (event->event_mask & POINTER_EVENT_AXIS) { */
-    /*   input_process_mouse_wheel( */
-    /*       wl_fixed_to_int(event->axes[0].value) >= 0 ? 1 : -1); */
-    /* } */
-    /* if (event->event_mask & POINTER_EVENT_AXIS_DISCRETE) { */
-    /*   input_process_mouse_wheel(event->axes[0].discrete >= 0 ? 1 : -1); */
-    /* } */
+    if (event->event_mask & POINTER_EVENT_AXIS) {
+      input_process_mouse_wheel(
+          wl_fixed_to_int(event->axes[0].value) >= 0 ? 1 : -1);
+    }
+    if (event->event_mask & POINTER_EVENT_AXIS_DISCRETE) {
+      input_process_mouse_wheel(event->axes[0].discrete >= 0 ? 1 : -1);
+    }
   }
 
   memset(event, 0, sizeof(*event));
@@ -312,12 +313,11 @@ static void wl_keyboard_enter(void *data, struct wl_keyboard *wl_keyboard,
   (void)serial;
   wayland_state *state = data;
   u32 *key;
-  /* keys new_key; */
+  keys new_key;
   wl_array_for_each(key, wlkeys) {
     u32 sym = xkb_state_key_get_one_sym(state->xkb_state, *key + 8);
-    (void)sym;
-    /* new_key = translate_keycode(sym); */
-    /* input_process_key(new_key, true); */
+    new_key = translate_keycode(sym);
+    input_process_key(new_key, true);
   }
 }
 
@@ -330,9 +330,8 @@ static void wl_keyboard_key(void *data, struct wl_keyboard *wl_keyboard,
   wayland_state *client_state = data;
   xkb_keysym_t sym =
       xkb_state_key_get_one_sym(client_state->xkb_state, key + 8);
-  (void)sym;
-  /* input_process_key(translate_keycode(sym), */
-  /*                   (bool)(state == WL_KEYBOARD_KEY_STATE_PRESSED)); */
+  input_process_key(translate_keycode(sym),
+                    (bool)(state == WL_KEYBOARD_KEY_STATE_PRESSED));
 }
 
 static void wl_keyboard_leave(void *data, struct wl_keyboard *wl_keyboard,
@@ -354,9 +353,9 @@ static void wl_keyboard_modifiers(void *data, struct wl_keyboard *wl_keyboard,
   (void)mods_latched;
   (void)mods_locked;
   (void)group;
-  // internal_state *state = data;
-  // xkb_state_update_mask(state->xkb_state, mods_depressed, mods_latched,
-  //                       mods_locked, 0, 0, group);
+  /* internal_state *state = data; */
+  /* xkb_state_update_mask(state->xkb_state, mods_depressed, mods_latched, */
+  /*                       mods_locked, 0, 0, group); */
 }
 
 static void wl_keyboard_repeat_info(void *data, struct wl_keyboard *wl_keyboard,
@@ -463,7 +462,7 @@ static const struct wl_registry_listener registry_listener = {
     .global_remove = registry_handle_global_remove,
 };
 
-bool wl_platform_startup(void *state, platform_config config) { // NOLINT
+bool wl_platform_startup(void *state, platform_config config) {
   state_ptr = state;
 
   state_ptr->xdg_surface_configured = false;
@@ -536,7 +535,6 @@ void wl_platform_shutdown(void) {
   state_ptr->wl_client_handle = nullptr;
   state_ptr->xkb_context = nullptr;
 }
-// NOLINTEND(bugprone-easily-swappable-parameters)
 
 bool wl_platform_pump_messages(void) {
   while (state_ptr->fns.wl_display_prepare_read(state_ptr->display) != 0) {
