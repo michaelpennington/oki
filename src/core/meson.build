@@ -5,4 +5,5 @@ core_files = files(
   'event.c',
   'input.c',
   'kstring.c',
+  'clock.c',
 )

@@ -14,6 +14,12 @@ pkgs.mkShellNoCC {
     xorg.libxcb
     libxkbcommon
     valgrind
+    vulkan-loader
+    vulkan-headers
+    vulkan-tools-lunarg
+    vulkan-caps-viewer
+    vulkan-validation-layers
+    vulkan-utility-libraries
   ];
   CC = "clang";
   CC_LD = "lld";

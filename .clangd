@@ -2,12 +2,11 @@ Diagnostics:
   ClangTidy:
     Add: ['bugprone-*', 'modernize-*', 'performance-*', 'readability-*', 'misc-*', 'clang-analyzer-*']
     CheckOptions:
-      readability-magic-numbers.IgnorePowersOf2IntegerValues: true
     Remove: [
       'bugprone-easily-swappable-parameters',
       'readability-identifier-length',
       'readability-implicit-bool-conversion',
-      # 'readability-magic-numbers',
+      'readability-magic-numbers',
       # 'readability-function-cognitive-complexity',
       # 'misc-unused-parameters',
       # 'modernize-macro-to-enum',

@@ -45,6 +45,9 @@ static_assert(sizeof(f64) == 8, "Expected f64 to be 8 bytes.");
 #mesondefine KASSERTIONS_ENABLED
 #mesondefine KBUILD_X11
 #mesondefine KBUILD_WAYLAND
+#mesondefine KVERSION_MAJOR
+#mesondefine KVERSION_MINOR
+#mesondefine KVERSION_PATCH
 
 #if defined(KEXPORT)
 #if defined(_MSC_VER)

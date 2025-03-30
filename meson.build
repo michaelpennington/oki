@@ -1,5 +1,5 @@
 project('oki', 'c',
-  version : '0.1',
+  version : '0.1.0',
   default_options : ['warning_level=3', 'c_std=gnu23']
 )
 
@@ -10,7 +10,17 @@ conf_data = configuration_data()
 wayland_build = false
 x11_build = false
 
+
 engine_dependencies = []
+
+vulkan_dep = dependency('vulkan')
+engine_dependencies += vulkan_dep
+
+versions = meson.project_version().split('.')
+
+conf_data.set('KVERSION_MAJOR', versions[0].to_int())
+conf_data.set('KVERSION_MINOR', versions[1].to_int())
+conf_data.set('KVERSION_PATCH', versions[2].to_int())
 
 if os == 'linux'
   conf_data.set('KPLATFORM_LINUX', true)
