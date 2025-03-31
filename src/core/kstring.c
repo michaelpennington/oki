@@ -14,3 +14,15 @@ u64 string_length(const char *str) {
   }
   return s - str;
 }
+
+bool strings_equal(const char *str0, const char *str1) {
+  for (u64 i = 0;; i++) {
+    if (str0[i]) {
+      if (str0[i] != str1[i]) {
+        return false;
+      }
+    } else {
+      return !str1[i];
+    }
+  }
+}

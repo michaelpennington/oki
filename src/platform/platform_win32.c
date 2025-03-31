@@ -1,7 +1,10 @@
 #include "platform/platform.h"
 
+#include "containers/darray.h"
 #include "core/input.h"
 #include <stdlib.h>
+#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_win32.h>
 #include <windows.h>
 #include <windowsx.h>
 #include <winuser.h>
@@ -137,6 +140,10 @@ f64 platform_get_absolute_time() {
 }
 
 void platform_sleep(u32 ms) { Sleep(ms); }
+
+void platform_get_required_extension_names(const char ***names) {
+  darray_push(names, VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+}
 
 LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param,
                                        LPARAM l_param) {

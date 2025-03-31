@@ -21,6 +21,7 @@ pkgs.mkShellNoCC {
     vulkan-validation-layers
     vulkan-utility-libraries
   ];
+  VK_LAYER_PATH = "${pkgs.vulkan-validation-layers}/share/vulkan/explicit_layer.d";
   CC = "clang";
   CC_LD = "lld";
 }

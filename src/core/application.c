@@ -3,6 +3,7 @@
 #include "core/event.h"
 #include "core/input.h"
 #include "core/kmemory.h"
+#include "core/kstring.h"
 #include "core/logger.h"
 #include "game_types.h"
 #include "platform/platform.h"

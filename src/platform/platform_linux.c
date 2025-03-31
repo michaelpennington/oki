@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <vulkan/vulkan.h>
 
+#include "containers/darray.h"
 #include "core/input.h"
 #include "core/logger.h"
 #include "platform/platform.h"
@@ -12,10 +14,12 @@ const u32 kilo = 1000;
 
 #if defined(KBUILD_X11)
 #include "platform/platform_linux_x11.h"
+#include <vulkan/vulkan_xcb.h>
 #endif
 
 #if defined(KBUILD_WAYLAND)
 #include "platform_linux_wayland.h"
+#include <vulkan/vulkan_wayland.h>
 #endif
 
 typedef struct platform_state {
@@ -27,6 +31,7 @@ typedef struct platform_state {
 #endif
   void (*platform_shutdown)();
   bool (*platform_pump_messages)();
+  const char *vulkan_surface_extension_name;
 } platform_state;
 
 static platform_state *state_ptr;
@@ -36,6 +41,8 @@ static bool wl_startup(platform_config config) {
   if (wl_platform_startup(&state_ptr->wl, config)) {
     state_ptr->platform_pump_messages = wl_platform_pump_messages;
     state_ptr->platform_shutdown = wl_platform_shutdown;
+    state_ptr->vulkan_surface_extension_name =
+        VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME;
     return true;
   }
   return false;
@@ -47,6 +54,8 @@ static bool x11_startup(platform_config config) {
   if (x11_platform_startup(&state_ptr->x11, config)) {
     state_ptr->platform_pump_messages = x11_platform_pump_messages;
     state_ptr->platform_shutdown = x11_platform_shutdown;
+    state_ptr->vulkan_surface_extension_name =
+        VK_KHR_XCB_SURFACE_EXTENSION_NAME;
     return true;
   }
   return false;
@@ -146,6 +155,10 @@ void platform_sleep(u32 ms) {
   ts.tv_sec = ms / kilo;
   ts.tv_nsec = (u32)((ms % kilo) * kilo * kilo);
   nanosleep(&ts, nullptr);
+}
+
+void platform_get_required_extension_names(const char ***names) {
+  darray_push(names, state_ptr->vulkan_surface_extension_name);
 }
 
 keys translate_keycode(u32 xkb_keycode) {
