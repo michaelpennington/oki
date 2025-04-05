@@ -17,6 +17,7 @@ pkgs.mkShellNoCC {
     vulkan-loader
     vulkan-headers
     vulkan-tools-lunarg
+    vulkan-tools
     vulkan-caps-viewer
     vulkan-validation-layers
     vulkan-utility-libraries

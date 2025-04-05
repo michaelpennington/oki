@@ -1,6 +1,7 @@
 #pragma once
 
 #include "defines.h"
+#include "vulkan/vulkan_core.h"
 #include <X11/XKBlib.h>
 #include <X11/Xlib-xcb.h>
 #include <X11/Xlib.h>
@@ -99,4 +100,6 @@ typedef struct x11_state {
   i32 device_id;
 
   xpfns fns;
+
+  VkSurfaceKHR vk_surface;
 } x11_state;

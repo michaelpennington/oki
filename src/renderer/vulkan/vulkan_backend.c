@@ -6,8 +6,8 @@
 #include "vulkan/vulkan_core.h"
 #include "vulkan_types.h"
 
+#include "vulkan_device.h"
 #include "vulkan_platform.h"
-#include <stdio.h>
 
 static vulkan_context context;
 
@@ -126,9 +126,23 @@ bool vulkan_renderer_backend_initialize(struct renderer_backend *backend,
   kassert_msg(func, "Failed to create debug messenger");
   VK_CHECK(func(context.instance, &debug_create_info, context.allocator,
                 &context.debug_messenger));
-  kdebug("Vulkan debugger created");
+  kdebug("Vulkan debugger created!");
 
 #endif
+
+  kdebug("Creating Vulkan surface...");
+  if (!platform_create_vulkan_surface(context.instance, context.allocator,
+                                      &context.surface)) {
+    kfatal("Failed to create platform surface!");
+    return false;
+  }
+  kdebug("Vulkan surface created!");
+
+  if (!vulkan_device_create(&context)) {
+    kfatal("Failed to create device!");
+    return false;
+  }
+  kdebug("Vulkan device created");
 
   darray_destroy(required_extensions);
 
@@ -143,6 +157,11 @@ bool vulkan_renderer_backend_initialize(struct renderer_backend *backend,
 
 void vulkan_renderer_backend_shutdown(struct renderer_backend *backend) {
   (void)backend;
+
+  vulkan_device_destroy(&context);
+
+  kdebug("Destroying Vulkan Surface...");
+  vkDestroySurfaceKHR(context.instance, context.surface, context.allocator);
 
 #if defined(_DEBUG)
   kdebug("Destroying debug messenger");

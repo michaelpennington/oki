@@ -31,6 +31,9 @@ typedef struct platform_state {
 #endif
   void (*platform_shutdown)();
   bool (*platform_pump_messages)();
+  bool (*platform_get_surface)(VkInstance instance,
+                               VkAllocationCallbacks *allocator,
+                               VkSurfaceKHR *surface);
   const char *vulkan_surface_extension_name;
 } platform_state;
 
@@ -41,6 +44,7 @@ static bool wl_startup(platform_config config) {
   if (wl_platform_startup(&state_ptr->wl, config)) {
     state_ptr->platform_pump_messages = wl_platform_pump_messages;
     state_ptr->platform_shutdown = wl_platform_shutdown;
+    state_ptr->platform_get_surface = wl_platform_create_vulkan_surface;
     state_ptr->vulkan_surface_extension_name =
         VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME;
     return true;
@@ -54,6 +58,7 @@ static bool x11_startup(platform_config config) {
   if (x11_platform_startup(&state_ptr->x11, config)) {
     state_ptr->platform_pump_messages = x11_platform_pump_messages;
     state_ptr->platform_shutdown = x11_platform_shutdown;
+    state_ptr->platform_get_surface = x11_platform_create_vulkan_surface;
     state_ptr->vulkan_surface_extension_name =
         VK_KHR_XCB_SURFACE_EXTENSION_NAME;
     return true;
@@ -159,6 +164,12 @@ void platform_sleep(u32 ms) {
 
 void platform_get_required_extension_names(const char ***names) {
   darray_push(names, state_ptr->vulkan_surface_extension_name);
+}
+
+bool platform_create_vulkan_surface(VkInstance instance,
+                                    VkAllocationCallbacks *allocator,
+                                    VkSurfaceKHR *surface) {
+  return state_ptr->platform_get_surface(instance, allocator, surface);
 }
 
 keys translate_keycode(u32 xkb_keycode) {

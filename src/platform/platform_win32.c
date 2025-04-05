@@ -1,3 +1,4 @@
+#if defined(KBUILD_WINDOWS)
 #include "platform/platform.h"
 
 #include "containers/darray.h"
@@ -12,6 +13,7 @@
 typedef struct platform_state {
   HINSTANCE h_instance;
   HWND hwnd;
+  VkSurfaceKHR vk_surface;
 
   f64 clock_frequency;
   LARGE_INTEGER start_time;
@@ -249,3 +251,24 @@ static bool enable_colors(void) {
   DWORD in_mode = original_in_mode | requested_in_modes;
   return (bool)(SetConsoleMode(h_in, in_mode));
 }
+
+bool platform_create_vulkan_surface(VkInstance instance,
+                                    VkAllocationCallbacks *allocator,
+                                    VkSurfaceKHR *surface) {
+  VkWin32SurfaceCreateInfoKHR create_info = {
+      .stype = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
+      .hinstance = state_ptr->h_instance,
+      .hwnd = state_ptr->hwnd,
+  };
+  VkResult result = vkCreateWin32SurfaceKHR(context->instance, &create_info,
+                                            context->allocator, surface);
+  if (result != VK_SUCCESS) {
+    kfatal("Vulkan surface creation failed.");
+    return false;
+  }
+
+  state_ptr->surface = *surface;
+  return true;
+}
+
+#endif

@@ -7,6 +7,7 @@
 #include "core/logger.h"
 #include "platform/platform.h"
 #include "platform/platform_linux_x11.h"
+#include "vulkan/vulkan_xcb.h"
 
 static x11_state *state_ptr;
 
@@ -317,4 +318,25 @@ bool x11_platform_pump_messages(void) {
   } while (event != nullptr);
 
   return (bool)!quit_flagged;
+}
+
+bool x11_platform_create_vulkan_surface(VkInstance instance,
+                                        VkAllocationCallbacks *allocator,
+                                        VkSurfaceKHR *surface) {
+  VkXcbSurfaceCreateInfoKHR create_info = {
+      .sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
+      .connection = state_ptr->connection,
+      .window = state_ptr->window,
+  };
+
+  VkResult result =
+      vkCreateXcbSurfaceKHR(instance, &create_info, allocator, surface);
+  if (result != VK_SUCCESS) {
+    kfatal("Vulkan surface creation failed!");
+    return false;
+  }
+
+  state_ptr->vk_surface = *surface;
+
+  return true;
 }

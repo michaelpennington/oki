@@ -1,6 +1,7 @@
 #pragma once
 
 #include "defines.h"
+#include "vulkan/vulkan_core.h"
 
 #include <sys/poll.h>
 
@@ -82,6 +83,8 @@ typedef struct wayland_state {
   struct xkb_state *xkb_state;
   struct wl_cursor_theme *wl_cursor_theme;
   struct wl_cursor *default_cursor;
+
+  VkSurfaceKHR vk_surface;
 
   i32 width;
   i32 height;

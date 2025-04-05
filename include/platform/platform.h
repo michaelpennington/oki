@@ -2,6 +2,7 @@
 
 #include "core/input.h"
 #include "defines.h"
+#include "vulkan/vulkan_core.h"
 
 typedef struct platform_config {
   const char *application_name;
@@ -36,10 +37,16 @@ keys translate_keycode(u32 xkb_keycode);
 bool x11_platform_startup(void *state, platform_config config);
 void x11_platform_shutdown();
 bool x11_platform_pump_messages();
+bool x11_platform_create_vulkan_surface(VkInstance instance,
+                                        VkAllocationCallbacks *allocator,
+                                        VkSurfaceKHR *surface);
 #endif
 
 #if defined(KBUILD_WAYLAND)
 bool wl_platform_startup(void *state, platform_config config);
 void wl_platform_shutdown();
 bool wl_platform_pump_messages();
+bool wl_platform_create_vulkan_surface(VkInstance instance,
+                                       VkAllocationCallbacks *allocator,
+                                       VkSurfaceKHR *surface);
 #endif

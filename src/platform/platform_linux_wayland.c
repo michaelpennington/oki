@@ -2,6 +2,8 @@
 #include "core/event.h"
 #include "core/logger.h"
 #include "platform/platform.h"
+#include "vulkan/vulkan_core.h"
+#include "vulkan/vulkan_wayland.h"
 
 #include <dlfcn.h>
 #include <linux/input-event-codes.h>
@@ -554,4 +556,24 @@ bool wl_platform_pump_messages(void) {
 
   state_ptr->wl_pollfd.revents = 0;
   return (bool)!state_ptr->quit_flagged;
+}
+
+bool wl_platform_create_vulkan_surface(VkInstance instance,
+                                       VkAllocationCallbacks *allocator,
+                                       VkSurfaceKHR *surface) {
+  VkWaylandSurfaceCreateInfoKHR create_info = {
+      .sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR,
+      .display = state_ptr->display,
+      .surface = state_ptr->wl_surface,
+  };
+  VkResult result =
+      vkCreateWaylandSurfaceKHR(instance, &create_info, allocator, surface);
+  if (result != VK_SUCCESS) {
+    kfatal("Vulkan surface creation failed!");
+    return false;
+  }
+
+  state_ptr->vk_surface = *surface;
+
+  return true;
 }
