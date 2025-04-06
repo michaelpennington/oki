@@ -38,10 +38,112 @@ bool vulkan_device_create(vulkan_context *context) {
     return false;
   }
 
+  kinfo("Creating logical device...");
+
+  bool present_shares_graphics_queue = context->device.graphics_queue_index ==
+                                       context->device.present_queue_index;
+  bool transfer_shares_graphics_queue = context->device.transfer_queue_index ==
+                                        context->device.graphics_queue_index;
+  bool present_shares_transfer_queue = context->device.transfer_queue_index ==
+                                       context->device.present_queue_index;
+  u32 index_count;
+  if (present_shares_graphics_queue) {
+    if (transfer_shares_graphics_queue) {
+      index_count = 1;
+    } else {
+      index_count = 2;
+    }
+  } else if (transfer_shares_graphics_queue) {
+    index_count = 2;
+  } else if (present_shares_transfer_queue) {
+    index_count = 2;
+  } else {
+    index_count = 3;
+  }
+  u32 indices[index_count];
+  u8 index = 0;
+  indices[index++] = context->device.graphics_queue_index;
+  if (!present_shares_graphics_queue) {
+    indices[index++] = context->device.present_queue_index;
+  }
+  if (!transfer_shares_graphics_queue && !present_shares_transfer_queue) {
+    indices[index++] = context->device.transfer_queue_index;
+  }
+
+  VkDeviceQueueCreateInfo queue_create_infos[index_count];
+  for (u32 i = 0; i < index_count; ++i) {
+    queue_create_infos[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queue_create_infos[i].queueFamilyIndex = indices[i];
+    queue_create_infos[i].queueCount = 1;
+    queue_create_infos[i].flags = 0;
+    queue_create_infos[i].pNext = 0;
+    f32 queue_priority = 1.0F;
+    queue_create_infos[i].pQueuePriorities = &queue_priority;
+  }
+
+  VkPhysicalDeviceFeatures device_features = {
+      .samplerAnisotropy = VK_TRUE,
+  };
+
+  const char *extension_names = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+
+  VkDeviceCreateInfo device_create_info = {
+      .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+      .queueCreateInfoCount = index_count,
+      .pQueueCreateInfos = queue_create_infos,
+      .pEnabledFeatures = &device_features,
+      .enabledExtensionCount = 1,
+      .ppEnabledExtensionNames = &extension_names,
+      .enabledLayerCount = 0,
+      .ppEnabledLayerNames = nullptr,
+  };
+
+  VK_CHECK(vkCreateDevice(context->device.physical_device, &device_create_info,
+                          context->allocator, &context->device.logical_device));
+
+  kinfo("Logical device created");
+
+  vkGetDeviceQueue(context->device.logical_device,
+                   context->device.graphics_queue_index, 0,
+                   &context->device.graphics_queue);
+  vkGetDeviceQueue(context->device.logical_device,
+                   context->device.transfer_queue_index, 0,
+                   &context->device.transfer_queue);
+  vkGetDeviceQueue(context->device.logical_device,
+                   context->device.present_queue_index, 0,
+                   &context->device.present_queue);
+  kinfo("Queues obtained");
+
   return true;
 }
 
-void vulkan_device_destroy(vulkan_context *context) {}
+void vulkan_device_destroy(vulkan_context *context) {
+  kinfo("Destroying logical device...");
+  if (context->device.logical_device) {
+    vkDestroyDevice(context->device.logical_device, context->allocator);
+    context->device.logical_device = nullptr;
+  }
+
+  kinfo("Releasing physical device resources...");
+  context->device.physical_device = 0;
+
+  if (context->device.swapchain_support.formats) {
+    darray_destroy(context->device.swapchain_support.formats);
+    context->device.swapchain_support.formats = nullptr;
+  }
+
+  if (context->device.swapchain_support.present_modes) {
+    darray_destroy(context->device.swapchain_support.present_modes);
+    context->device.swapchain_support.present_modes = nullptr;
+  }
+
+  kzero_memory(&context->device.swapchain_support.capabilities,
+               sizeof(VkSurfaceCapabilitiesKHR));
+
+  context->device.graphics_queue_index = -1;
+  context->device.present_queue_index = -1;
+  context->device.transfer_queue_index = -1;
+}
 
 void vulkan_device_query_swapchain_support(
     VkPhysicalDevice physical_device, VkSurfaceKHR surface,
@@ -49,32 +151,32 @@ void vulkan_device_query_swapchain_support(
   VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
       physical_device, surface, &out_support_info->capabilities));
 
-  VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
-      physical_device, surface, &out_support_info->format_count, nullptr));
+  u32 format_count = 0;
+  VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface,
+                                                &format_count, nullptr));
 
-  if (out_support_info->format_count != 0) {
+  if (format_count != 0) {
     if (!out_support_info->formats) {
       out_support_info->formats =
-          kallocate(sizeof(VkSurfaceFormatKHR) * out_support_info->format_count,
-                    MEMORY_TAG_RENDERER);
+          darray_with_capacity(VkSurfaceFormatKHR, format_count);
     }
     VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
-        physical_device, surface, &out_support_info->format_count,
-        out_support_info->formats));
+        physical_device, surface, &format_count, out_support_info->formats));
+    darray_length_set(out_support_info->formats, format_count);
   }
 
+  u32 present_mode_count = 0;
   VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
-      physical_device, surface, &out_support_info->present_mode_count,
-      nullptr));
-  if (out_support_info->present_mode_count != 0) {
+      physical_device, surface, &present_mode_count, nullptr));
+  if (present_mode_count != 0) {
     if (!out_support_info->present_modes) {
-      out_support_info->present_modes = kallocate(
-          sizeof(VkPresentModeKHR) * out_support_info->present_mode_count,
-          MEMORY_TAG_RENDERER);
+      out_support_info->present_modes =
+          darray_with_capacity(VkPresentModeKHR, present_mode_count);
     }
     VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
-        physical_device, surface, &out_support_info->present_mode_count,
+        physical_device, surface, &present_mode_count,
         out_support_info->present_modes));
+    darray_length_set(out_support_info->present_modes, present_mode_count);
   }
 }
 
@@ -267,20 +369,17 @@ bool physical_device_meets_requirements(
 
   vulkan_device_query_swapchain_support(device, surface, out_swapchain_support);
 
-  if (out_swapchain_support->format_count < 1 ||
-      out_swapchain_support->present_mode_count < 1) {
+  if (!out_swapchain_support->formats ||
+      !out_swapchain_support->present_modes) {
     if (out_swapchain_support->formats) {
-      kfree(out_swapchain_support->formats);
+      darray_destroy(out_swapchain_support->formats);
     }
     if (out_swapchain_support->present_modes) {
-      kfree(out_swapchain_support->present_modes);
+      darray_destroy(out_swapchain_support->present_modes);
     }
     kinfo("Required swapchain support not present, skipping device");
     return false;
   }
-
-  kfree(out_swapchain_support->formats);
-  kfree(out_swapchain_support->present_modes);
 
   if (requirements->device_extension_names) {
     u32 available_extension_count = 0;

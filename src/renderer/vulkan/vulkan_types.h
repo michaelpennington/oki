@@ -11,9 +11,9 @@
 
 typedef struct vulkan_swapchain_support_info {
   VkSurfaceCapabilitiesKHR capabilities;
-  u32 format_count;
+  /// darray
   VkSurfaceFormatKHR *formats;
-  u32 present_mode_count;
+  /// darray
   VkPresentModeKHR *present_modes;
 } vulkan_swapchain_support_info;
 
@@ -24,6 +24,11 @@ typedef struct vulkan_device {
   i32 graphics_queue_index;
   i32 present_queue_index;
   i32 transfer_queue_index;
+
+  VkQueue graphics_queue;
+  VkQueue present_queue;
+  VkQueue transfer_queue;
+
   VkPhysicalDeviceProperties properties;
   VkPhysicalDeviceFeatures features;
   VkPhysicalDeviceMemoryProperties memory;
