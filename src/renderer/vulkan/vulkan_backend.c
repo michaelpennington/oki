@@ -8,6 +8,7 @@
 
 #include "vulkan_device.h"
 #include "vulkan_platform.h"
+#include "vulkan_swapchain.h"
 
 static vulkan_context context;
 
@@ -18,6 +19,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
     const VkDebugUtilsMessengerCallbackDataEXT *callback_data, void *user_data);
 #endif
 
+i32 find_memory_index(u32 type_filter, u32 property_flags);
+
 bool vulkan_renderer_backend_initialize(struct renderer_backend *backend,
                                         const char *application_name,
                                         struct platform_state *plat_state) {
@@ -25,6 +28,7 @@ bool vulkan_renderer_backend_initialize(struct renderer_backend *backend,
   (void)plat_state;
   // TODO: custom allocator
   context.allocator = nullptr;
+  context.find_memory_index = find_memory_index;
 
   VkApplicationInfo app_info = {
       .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -97,8 +101,12 @@ bool vulkan_renderer_backend_initialize(struct renderer_backend *backend,
   VK_CHECK(
       vkCreateInstance(&create_info, context.allocator, &context.instance));
   kinfo("Vulkan instance created!");
+  darray_destroy(required_extensions);
 
 #if defined(_DEBUG)
+  darray_destroy(available_layers);
+  darray_destroy(required_validation_layer_names);
+
   kdebug("Creating vulkan debugger...");
   u32 log_severity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 #if defined(LOG_WARN_ENABLED)
@@ -144,12 +152,9 @@ bool vulkan_renderer_backend_initialize(struct renderer_backend *backend,
   }
   kdebug("Vulkan device created");
 
-  darray_destroy(required_extensions);
-
-#if defined(_DEBUG)
-  darray_destroy(available_layers);
-  darray_destroy(required_validation_layer_names);
-#endif
+  vulkan_swapchain_create(&context, context.framebuffer_width,
+                          context.framebuffer_height, &context.swapchain);
+  kdebug("Vulkan swapchain created");
 
   kinfo("Vulkan renderer initialized :)");
   return true;
@@ -158,10 +163,18 @@ bool vulkan_renderer_backend_initialize(struct renderer_backend *backend,
 void vulkan_renderer_backend_shutdown(struct renderer_backend *backend) {
   (void)backend;
 
+  if (context.swapchain.handle) {
+    vulkan_swapchain_destroy(&context, &context.swapchain);
+  }
+
+  kdebug("Destroying Vulkan device...");
   vulkan_device_destroy(&context);
 
   kdebug("Destroying Vulkan Surface...");
-  vkDestroySurfaceKHR(context.instance, context.surface, context.allocator);
+  if (context.surface) {
+    vkDestroySurfaceKHR(context.instance, context.surface, context.allocator);
+    context.surface = nullptr;
+  }
 
 #if defined(_DEBUG)
   kdebug("Destroying debug messenger");
@@ -258,3 +271,19 @@ vk_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
   return VK_FALSE;
 }
 #endif
+
+i32 find_memory_index(u32 type_filter, u32 property_flags) {
+  VkPhysicalDeviceMemoryProperties memory_properties;
+  vkGetPhysicalDeviceMemoryProperties(context.device.physical_device,
+                                      &memory_properties);
+
+  for (u32 i = 0; i < memory_properties.memoryTypeCount; ++i) {
+    if (type_filter & (1 << i) &&
+        (memory_properties.memoryTypes[i].propertyFlags & property_flags)) {
+      return i;
+    }
+  }
+
+  kwarn("Unable to find suitable memory type!");
+  return -1;
+}

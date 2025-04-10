@@ -37,6 +37,12 @@ enum {
   MEMORY_FIELD_LENGTH,
 };
 
+#define FREE(block)                                                            \
+  {                                                                            \
+    kfree(block);                                                              \
+    block = nullptr;                                                           \
+  }
+
 KAPI void initialize_memory();
 KAPI void shutdown_memory();
 
