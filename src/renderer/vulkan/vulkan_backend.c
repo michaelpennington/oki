@@ -8,6 +8,7 @@
 
 #include "vulkan_device.h"
 #include "vulkan_platform.h"
+#include "vulkan_render_pass.h"
 #include "vulkan_swapchain.h"
 
 static vulkan_context context;
@@ -156,12 +157,21 @@ bool vulkan_renderer_backend_initialize(struct renderer_backend *backend,
                           context.framebuffer_height, &context.swapchain);
   kdebug("Vulkan swapchain created");
 
+  vulkan_render_pass_create(
+      &context, &context.main_render_pass, 0, 0, context.framebuffer_width,
+      context.framebuffer_height, 0.0, 4.0, 4.0, 1.0, 1.0, 0);
+  kdebug("Vulkan render pass created.");
+
   kinfo("Vulkan renderer initialized :)");
   return true;
 }
 
 void vulkan_renderer_backend_shutdown(struct renderer_backend *backend) {
   (void)backend;
+
+  if (context.main_render_pass.handle) {
+    vulkan_render_pass_destroy(&context, &context.main_render_pass);
+  }
 
   if (context.swapchain.handle) {
     vulkan_swapchain_destroy(&context, &context.swapchain);

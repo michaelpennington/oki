@@ -55,6 +55,41 @@ typedef struct vulkan_swapchain {
   vulkan_image depth_attachment;
 } vulkan_swapchain;
 
+typedef enum vulkan_render_pass_state {
+  READY,
+  RECORDING,
+  IN_RENDER_PASS,
+  RECORDING_ENDED,
+  SUBMITTED,
+  NOT_ALLOCATED,
+} vulkan_render_pass_state;
+
+typedef struct vulkan_render_pass {
+  VkRenderPass handle;
+  f32 x, y, w, h;
+  f32 r, g, b, a;
+
+  f32 depth;
+  u32 stencil;
+
+  vulkan_render_pass_state state;
+} vulkan_render_pass;
+
+typedef enum vulkan_command_buffer_state {
+  COMMAND_BUFFER_STATE_READY,
+  COMMAND_BUFFER_STATE_RECORDING,
+  COMMAND_BUFFER_STATE_IN_RENDER_PASS,
+  COMMAND_BUFFER_STATE_RECORDING_ENDED,
+  COMMAND_BUFFER_STATE_SUBMITTED,
+  COMMAND_BUFFER_STATE_NOT_ALLOCATED,
+} vulkan_command_buffer_state;
+
+typedef struct vulkan_command_buffer {
+  VkCommandBuffer handle;
+
+  vulkan_command_buffer_state state;
+} vulkan_command_buffer;
+
 typedef struct vulkan_context {
   u32 framebuffer_width;
   u32 framebuffer_height;
@@ -77,4 +112,6 @@ typedef struct vulkan_context {
 
   i32 (*find_memory_index)(u32 type_filter,
                            VkMemoryPropertyFlags property_flags);
+
+  vulkan_render_pass main_render_pass;
 } vulkan_context;
