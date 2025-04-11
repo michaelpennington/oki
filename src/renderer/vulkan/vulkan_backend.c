@@ -1,6 +1,7 @@
 #include "vulkan_backend.h"
 
 #include "containers/darray.h"
+#include "core/application.h"
 #include "core/kmemory.h"
 #include "core/kstring.h"
 #include "core/logger.h"
@@ -8,12 +9,16 @@
 
 #include "vulkan_command_buffer.h"
 #include "vulkan_device.h"
+#include "vulkan_fence.h"
+#include "vulkan_framebuffer.h"
 #include "vulkan_platform.h"
 #include "vulkan_render_pass.h"
 #include "vulkan_swapchain.h"
 #include "vulkan_types.h"
 
 static vulkan_context context;
+static u32 cached_framebuffer_width = 0;
+static u32 cached_framebuffer_height = 0;
 
 #if defined(_DEBUG)
 VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
@@ -26,6 +31,10 @@ i32 find_memory_index(u32 type_filter, u32 property_flags);
 
 void create_command_buffers();
 void free_command_buffers();
+void regenerate_framebuffers(vulkan_swapchain *swapchain,
+                             vulkan_render_pass *render_pass);
+void initialize_sync_objects();
+void destroy_sync_objects();
 
 bool vulkan_renderer_backend_initialize(struct renderer_backend *backend,
                                         const char *application_name,
@@ -35,6 +44,15 @@ bool vulkan_renderer_backend_initialize(struct renderer_backend *backend,
   // TODO: custom allocator
   context.allocator = nullptr;
   context.find_memory_index = find_memory_index;
+
+  application_get_framebuffer_size(&cached_framebuffer_width,
+                                   &cached_framebuffer_height);
+  context.framebuffer_width =
+      cached_framebuffer_width != 0 ? cached_framebuffer_width : 800;
+  context.framebuffer_height =
+      cached_framebuffer_height != 0 ? cached_framebuffer_height : 600;
+  cached_framebuffer_width = 0;
+  cached_framebuffer_height = 0;
 
   VkApplicationInfo app_info = {
       .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -167,8 +185,15 @@ bool vulkan_renderer_backend_initialize(struct renderer_backend *backend,
       context.framebuffer_height, 0.0, 4.0, 4.0, 1.0, 1.0, 0);
   kdebug("Vulkan render pass created.");
 
+  context.swapchain.framebuffers =
+      darray_with_capacity(vulkan_framebuffer, context.swapchain.image_count);
+  regenerate_framebuffers(&context.swapchain, &context.main_render_pass);
+  kdebug("Vulkan framebuffers created.");
+
   create_command_buffers();
   kdebug("Command buffers created");
+
+  initialize_sync_objects();
 
   kinfo("Vulkan renderer initialized :)");
   return true;
@@ -176,7 +201,17 @@ bool vulkan_renderer_backend_initialize(struct renderer_backend *backend,
 
 void vulkan_renderer_backend_shutdown(struct renderer_backend *backend) {
   (void)backend;
+  vkDeviceWaitIdle(context.device.logical_device);
+
+  destroy_sync_objects();
   free_command_buffers();
+
+  if (context.swapchain.framebuffers) {
+    for (u32 i = 0; i < context.swapchain.image_count; i++) {
+      vulkan_framebuffer_destroy(&context, &context.swapchain.framebuffers[i]);
+    }
+    darray_destroy(context.swapchain.framebuffers);
+  }
 
   if (context.main_render_pass.handle) {
     vulkan_render_pass_destroy(&context, &context.main_render_pass);
@@ -340,4 +375,70 @@ void free_command_buffers() {
     }
   }
   darray_destroy(context.graphics_command_buffers);
+}
+
+#define ATTACHMENT_COUNT 2
+void regenerate_framebuffers(vulkan_swapchain *swapchain,
+                             vulkan_render_pass *render_pass) {
+  for (u32 i = 0; i < swapchain->image_count; i++) {
+    VkImageView attachments[ATTACHMENT_COUNT] = {
+        swapchain->views[i], swapchain->depth_attachment.view};
+
+    vulkan_framebuffer_create(&context, render_pass, context.framebuffer_width,
+                              context.framebuffer_height, ATTACHMENT_COUNT,
+                              attachments, &context.swapchain.framebuffers[i]);
+  }
+}
+
+void initialize_sync_objects() {
+  context.image_available_semaphores =
+      darray_with_capacity(VkSemaphore, context.swapchain.max_frames_in_flight);
+  context.queue_complete_semaphores =
+      darray_with_capacity(VkSemaphore, context.swapchain.max_frames_in_flight);
+  context.in_flight_fences = darray_with_capacity(
+      vulkan_fence, context.swapchain.max_frames_in_flight);
+
+  for (u8 i = 0; i < context.swapchain.max_frames_in_flight; ++i) {
+    VkSemaphoreCreateInfo semaphore_create_info = {
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+        .flags = 0,
+        .pNext = nullptr,
+    };
+    vkCreateSemaphore(context.device.logical_device, &semaphore_create_info,
+                      context.allocator,
+                      &context.image_available_semaphores[i]);
+    vkCreateSemaphore(context.device.logical_device, &semaphore_create_info,
+                      context.allocator, &context.queue_complete_semaphores[i]);
+
+    vulkan_fence_create(&context, true, &context.in_flight_fences[i]);
+  }
+  darray_length_set(context.image_available_semaphores,
+                    context.swapchain.max_frames_in_flight);
+  darray_length_set(context.in_flight_fences,
+                    context.swapchain.max_frames_in_flight);
+  darray_length_set(context.queue_complete_semaphores,
+                    context.swapchain.max_frames_in_flight);
+
+  context.images_in_flight =
+      darray_with_capacity(vulkan_fence *, context.swapchain.image_count);
+  for (u32 i = 0; i < context.swapchain.image_count; i++) {
+    context.images_in_flight[i] = 0;
+  }
+  darray_length_set(context.images_in_flight, context.swapchain.image_count);
+}
+
+void destroy_sync_objects() {
+  darray_destroy(context.images_in_flight);
+  for (u8 i = 0; i < context.swapchain.max_frames_in_flight; ++i) {
+    vkDestroySemaphore(context.device.logical_device,
+                       context.image_available_semaphores[i],
+                       context.allocator);
+    vkDestroySemaphore(context.device.logical_device,
+                       context.queue_complete_semaphores[i], context.allocator);
+
+    vulkan_fence_destroy(&context, &context.in_flight_fences[i]);
+  }
+  darray_destroy(context.image_available_semaphores);
+  darray_destroy(context.queue_complete_semaphores);
+  darray_destroy(context.in_flight_fences);
 }
