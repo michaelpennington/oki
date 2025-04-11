@@ -4,4 +4,5 @@ vulkan_backend_files = files(
   'vulkan_swapchain.c',
   'vulkan_image.c',
   'vulkan_render_pass.c',
+  'vulkan_command_buffer.c',
 )

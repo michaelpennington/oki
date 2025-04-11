@@ -2,6 +2,7 @@
 #include "platform/platform.h"
 
 #include "containers/darray.h"
+#include "core/event.h"
 #include "core/input.h"
 #include <stdlib.h>
 #include <vulkan/vulkan.h>
@@ -155,9 +156,9 @@ LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param,
     // flicker
     return 1;
   case WM_CLOSE:
-    // event_context data = {0};
-    // event_fire(EVENT_CODE_APPLICATION_QUIT, 0, data);
-    return 0;
+    event_context data = {0};
+    event_fire(EVENT_CODE_APPLICATION_QUIT, 0, data);
+    return true;
   case WM_DESTROY:
     PostQuitMessage(0);
     return 0;

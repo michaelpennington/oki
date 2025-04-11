@@ -17,7 +17,7 @@ void vulkan_render_pass_create(vulkan_context *context,
   out_render_pass->b = b;
   out_render_pass->a = a;
 
-  out_render_pass->state = NOT_ALLOCATED;
+  out_render_pass->state = RENDER_PASS_STATE_NOT_ALLOCATED;
   out_render_pass->depth = depth;
   out_render_pass->stencil = stencil;
 

@@ -41,6 +41,8 @@ typedef struct vulkan_device {
   VkPhysicalDeviceFeatures features;
   VkPhysicalDeviceMemoryProperties memory;
 
+  VkCommandPool graphics_command_pool;
+
   VkFormat depth_format;
 } vulkan_device;
 
@@ -56,12 +58,12 @@ typedef struct vulkan_swapchain {
 } vulkan_swapchain;
 
 typedef enum vulkan_render_pass_state {
-  READY,
-  RECORDING,
-  IN_RENDER_PASS,
-  RECORDING_ENDED,
-  SUBMITTED,
-  NOT_ALLOCATED,
+  RENDER_PASS_STATE_READY,
+  RENDER_PASS_STATE_RECORDING,
+  RENDER_PASS_STATE_IN_RENDER_PASS,
+  RENDER_PASS_STATE_RECORDING_ENDED,
+  RENDER_PASS_STATE_SUBMITTED,
+  RENDER_PASS_STATE_NOT_ALLOCATED,
 } vulkan_render_pass_state;
 
 typedef struct vulkan_render_pass {
@@ -104,6 +106,10 @@ typedef struct vulkan_context {
 
   vulkan_device device;
   vulkan_swapchain swapchain;
+  vulkan_render_pass main_render_pass;
+
+  /// darray
+  vulkan_command_buffer *graphics_command_buffers;
 
   u32 image_index;
   u32 current_frame;
@@ -113,5 +119,4 @@ typedef struct vulkan_context {
   i32 (*find_memory_index)(u32 type_filter,
                            VkMemoryPropertyFlags property_flags);
 
-  vulkan_render_pass main_render_pass;
 } vulkan_context;
